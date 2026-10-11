@@ -8,10 +8,12 @@ import org.springframework.web.server.ResponseStatusException;
 import pe.edu.cibertec.citaservicegrupo5.dto.AtencionMedicaResponseDTO;
 import pe.edu.cibertec.citaservicegrupo5.dto.DiagnosticoDTO;
 import pe.edu.cibertec.citaservicegrupo5.dto.PacienteHistorialDTO;
+import pe.edu.cibertec.citaservicegrupo5.dto.ResumenFichaMedicaConsolidadaDTO;
 import pe.edu.cibertec.citaservicegrupo5.restclient.paciente.iclient.PacienteClient;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -115,5 +117,67 @@ public class CitaService {
         cita.setEstadoCita("COMPLETADA");
 
         return cita;
+    }
+
+    public ResumenFichaMedicaConsolidadaDTO generarFichaMedica(
+            Long pacienteId) {
+
+        PacienteHistorialDTO paciente =
+                pacienteClient.obtenerPaciente(pacienteId);
+
+        List<DiagnosticoDTO> diagnosticos =
+                pacienteClient.obtenerDiagnosticos(pacienteId);
+
+        List<AtencionMedicaResponseDTO> historialAtenciones =
+                citas.values()
+                        .stream()
+                        .filter(cita ->
+                                cita.getPacienteId().equals(pacienteId))
+                        .toList();
+
+        int totalCitasAtendidas =
+                (int) historialAtenciones
+                        .stream()
+                        .filter(cita ->
+                                "COMPLETADA".equalsIgnoreCase(
+                                        cita.getEstadoCita()
+                                ))
+                        .count();
+
+        double montoTotalGasto =
+                historialAtenciones
+                        .stream()
+                        .filter(cita ->
+                                cita.getCopagoAplicado() != null)
+                        .mapToDouble(
+                                AtencionMedicaResponseDTO::getCopagoAplicado
+                        )
+                        .sum();
+
+        boolean requiereAtencionEspecializada =
+                diagnosticos
+                        .stream()
+                        .anyMatch(diagnostico ->
+                                "SEVERO".equalsIgnoreCase(
+                                        diagnostico.getGravedad()
+                                ));
+
+        String clasificacionRiesgo =
+                requiereAtencionEspecializada
+                        ? "ALTO_RIESGO"
+                        : "BAJO_RIESGO";
+
+        return new ResumenFichaMedicaConsolidadaDTO(
+                pacienteId,
+                paciente.getNombreCompleto(),
+                null,
+                paciente.getTipoSeguro(),
+                totalCitasAtendidas,
+                montoTotalGasto,
+                historialAtenciones,
+                diagnosticos,
+                requiereAtencionEspecializada,
+                clasificacionRiesgo
+        );
     }
 }

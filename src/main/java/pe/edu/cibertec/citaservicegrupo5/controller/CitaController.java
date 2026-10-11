@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.edu.cibertec.citaservicegrupo5.dto.AtencionMedicaResponseDTO;
+import pe.edu.cibertec.citaservicegrupo5.dto.ResumenFichaMedicaConsolidadaDTO;
 import pe.edu.cibertec.citaservicegrupo5.service.CitaService;
 
 @RestController
@@ -27,5 +28,12 @@ public class CitaController {
             @PathVariable("idCita") Long idCita) {
 
         return citaService.evaluarYCompletar(idCita);
+    }
+
+    @GetMapping("/ficha-medica/{pacienteId}")
+    public ResumenFichaMedicaConsolidadaDTO obtenerFichaMedica(
+            @PathVariable("pacienteId") Long pacienteId) {
+
+        return citaService.generarFichaMedica(pacienteId);
     }
 }
